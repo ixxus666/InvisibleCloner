@@ -135,14 +135,14 @@ title.TextSize = 12
 title.BorderSizePixel = 0
 title.Parent = frame
 
--- Discord label
+-- Discord label (visible under button)
 local discordLabel = Instance.new("TextLabel")
 discordLabel.Size = UDim2.new(1, -20, 0, 18)
-discordLabel.Position = UDim2.new(0, 10, 1, -20)
+discordLabel.Position = UDim2.new(0, 10, 0, 85)
 discordLabel.BackgroundTransparency = 1
 discordLabel.Text = "discord.gg/A5BjXj6Kkf"
-discordLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-discordLabel.TextStrokeTransparency = 0.6
+discordLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+discordLabel.TextStrokeTransparency = 0.5
 discordLabel.Font = Enum.Font.FredokaOne
 discordLabel.TextSize = 11
 discordLabel.TextWrapped = true
