@@ -149,7 +149,7 @@ discordLabel.TextWrapped = true
 discordLabel.Parent = frame
 
 local button = Instance.new("TextButton")
-button.Size = UDim2.new(1,-20,0,45)
+button.Size = UDim2.new(1, -20, 0, 38)
 button.Position = UDim2.new(0,10,0,35)
 button.BackgroundColor3 = Color3.fromRGB(120,60,220)
 button.Text = "Activate Combo"
