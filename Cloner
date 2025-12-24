@@ -1,325 +1,255 @@
-local player = game.Players.LocalPlayer
-local playergui = player:WaitForChild("PlayerGui")
+--=====================================
+-- SERVICES / PLAYER
+--=====================================
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
-local trackedClones = {}
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
-local function createbone(part1, part2, parent)
-	local attach1 = Instance.new("Attachment")
-	attach1.Parent = part1
-	
-	local attach2 = Instance.new("Attachment")
-	attach2.Parent = part2
-	
+--=====================================
+-- SKELETON ESP
+--=====================================
+local tracked = {}
+
+local function createBone(p0, p1, parent)
+	if not p0 or not p1 then return end
+
+	local a0 = Instance.new("Attachment", p0)
+	local a1 = Instance.new("Attachment", p1)
+
 	local beam = Instance.new("Beam")
-	beam.Attachment0 = attach1
-	beam.attachment1 = attach2
-	beam.Color = ColorSequence.new(Color3.fromRGB(255, 255, 0))
-	beam.FaceCamera = true
+	beam.Attachment0 = a0
+	beam.Attachment1 = a1
+	beam.Color = ColorSequence.new(Color3.fromRGB(255,255,0))
 	beam.Width0 = 0.15
 	beam.Width1 = 0.15
-	beam.Transparency = NumberSequence.new(0)
+	beam.FaceCamera = true
 	beam.LightEmission = 1
 	beam.LightInfluence = 0
 	beam.Parent = parent
-	
-	return beam
 end
 
--- esp function to create skeleton esp
-local function createesp(target)
-	if not target or not target:isA("Model") then return end
-	
-	-- check if esp already exist
-	if target:findFirstChild("SkeletonESP") then return end
-	
-	local humanoid = target:findFirstChild("Humanoid")
+local function createESP(character)
+	if tracked[character] then return end
+	tracked[character] = true
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if not humanoid then return end
-	
-	-- create folder to hold all skeletons parts
-	local espfolder = Instance.new("Folder")
-	espfolder.Name = "SkeletonESP"
-	espfolder.Parent = target
-	
-	-- get character parts
-	local head = target:findFirstChild("Head")
-	local torso = target:findFirstChild("Torso") or target:findFirstChild("UpperTorso")
-	local leftarm = target:findFirstChild("Left Arm") or target:findFirstChild("LeftUpperArm")
-	local rightarm = target:findFirstChild("Right Arm") or target:findFirstChild("RightUpperArm")
-	local leftleg = target:findFirstChild("Left Leg") or target:findFirstChild("LeftUpperLeg")
-	local rightleg = target:findFirstChild("Right Leg") or target:findFirstChild("RightUpperLeg")
-	
-	-- for r15 characters
-	local lowertorso = target:findFirstChild("LowerTorso")
-	local leftlowerarm = target:findFirstChild("LeftLowerArm")
-	local rightlowerarm = target:findFirstChild("RightLowerArm")
-	local lefthand = target:findFirstChild("LeftHand")
-	local righthand = target:findFirstChild("RightHand")
-	local leftlowerleg = target:findFirstChild("LeftLowerLeg")
-	local rightlowerleg = target:findFirstChild("RightLowerLeg")
-	local leftfoot = target:findFirstChild("LeftFoot")
-	local rightfoot = target:findFirstChild("RightFoot")
-	
-	-- create skeleton bones
-	if head and torso then
-		createbone(head, torso, espfolder)
-	end
-	
-	if torso then
-		if leftarm then createbone(torso,leftarm,espfolder) end
-		if rightarm then createbone(torso,rightarm,espfolder) end
-		if leftleg then createbone(torso,leftleg,espfolder) end
-		if rightleg then createbone(torso,rightleg,espfolder) end
-		if lowertorso then createbone(torso, lowertorso,espfolder) end
-	end
-	
-	-- r15 additional bones
-	if leftarm and leftlowerarm then createbone(leftarm, leftlowerarm,espfolder)end
-	if rightarm and rightlowerarm then createbone(rightarm, rightlowerarm,espfolder)end
-	if leftlowerarm and lefthand then createbone(leftlowerarm, lefthand,espfolder)end
-	if rightlowerarm and righthand then createbone(rightlowerarm, righthand,espfolder)end
-	
-	if leftleg and leftlowerleg then createbone(leftleg, leftlowerarm, espfolder)end
-	if rightleg and rightlowerleg then createbone(rightleg, rightlowerleg, espfolder)end
-	if leftlowerleg and leftfoot then createbone(leftlowerleg, leftfoot, espfolder)end
-	if rightlowerleg and rightfoot then createbone(rightlowerleg, rightfoot, espfolder)end
-	
-	if lowertorso then
-		if leftleg then createbone(lowertorso, leftleg,espfolder) end
-		if rightleg then createbone(lowertorso, rightleg,espfolder) end
-	end
-	
-	-- Create a billboard gui to show clone info
-	local billboard = Instance.new("BillboardGui")
-	billboard.Parent = head or torso
-	billboard.Size = UDim2.new(0, 100, 0, 50)
-	billboard.StudsOffset = Vector3.new(0, 3, 0)
-	billboard.AlwaysOnTop = true
-	
-	local textlabel = Instance.new("TextLabel")
-	textlabel.Parent = billboard
-	textlabel.Size = UDim2.new(1, 0, 1, 0)
-	textlabel.BackgroundTransparency = 1
-	textlabel.Text = "🟡 Clone"
-	textlabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-	textlabel.TextStrokeTransparency = 0.5
-	textlabel.Font = Enum.Font.FredokaOne
-	textlabel.textsize = 14
-	
-	print("🟡 Skeleton ESP added to clone!")
-	return espfolder
+
+	local folder = Instance.new("Folder")
+	folder.Name = "SkeletonESP"
+	folder.Parent = character
+
+	-- R6 + R15 parts
+	local head = character:FindFirstChild("Head")
+	local upper = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+	local lower = character:FindFirstChild("LowerTorso")
+
+	local lArm = character:FindFirstChild("LeftUpperArm") or character:FindFirstChild("Left Arm")
+	local rArm = character:FindFirstChild("RightUpperArm") or character:FindFirstChild("Right Arm")
+	local lLeg = character:FindFirstChild("LeftUpperLeg") or character:FindFirstChild("Left Leg")
+	local rLeg = character:FindFirstChild("RightUpperLeg") or character:FindFirstChild("Right Leg")
+
+	local lFore = character:FindFirstChild("LeftLowerArm")
+	local rFore = character:FindFirstChild("RightLowerArm")
+	local lHand = character:FindFirstChild("LeftHand")
+	local rHand = character:FindFirstChild("RightHand")
+
+	local lShin = character:FindFirstChild("LeftLowerLeg")
+	local rShin = character:FindFirstChild("RightLowerLeg")
+	local lFoot = character:FindFirstChild("LeftFoot")
+	local rFoot = character:FindFirstChild("RightFoot")
+
+	-- Core
+	createBone(head, upper, folder)
+	createBone(upper, lower, folder)
+
+	-- Arms
+	createBone(upper, lArm, folder)
+	createBone(upper, rArm, folder)
+	createBone(lArm, lFore, folder)
+	createBone(lFore, lHand, folder)
+	createBone(rArm, rFore, folder)
+	createBone(rFore, rHand, folder)
+
+	-- Legs
+	createBone(upper, lLeg, folder)
+	createBone(upper, rLeg, folder)
+	createBone(lLeg, lShin, folder)
+	createBone(lShin, lFoot, folder)
+	createBone(rLeg, rShin, folder)
+	createBone(rShin, rFoot, folder)
+
+	-- Billboard
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.new(0,120,0,40)
+	bb.StudsOffset = Vector3.new(0,3,0)
+	bb.AlwaysOnTop = true
+	bb.Parent = head or upper
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1,1)
+	label.BackgroundTransparency = 1
+	label.Text = "🟡 Clone"
+	label.TextColor3 = Color3.fromRGB(255,255,0)
+	label.TextStrokeTransparency = 0.3
+	label.Font = Enum.Font.FredokaOne
+	label.TextSize = 14
+	label.Parent = bb
 end
 
--- mointor workspace for new clones
-local function startclonemonitoring()
-	--monitor for new models added to workspace
-	workspace.DescendantAdded:Connect(function(descendant)
-		task.wait(0.2)
-		
-		-- check if parent is a model with humanoid
-		local parent = descendant.Parent
-		if parent and parent:IsA("Model") and parent:FindFirstChild("Humanoid") then
-			-- make sure its not the player character
-			if parent ~= player.Character and parent.Name ~= player.Name then
-				-- check if we havent already tracked this clone
-				if not trackedClones[parent] then
-					trackedClones[parent] = true
-					createesp(parent)
-					
-					--clean up when clone is destroyed
-					parent.AncestryChanged:Connect(function()
-						if not parent:IsDescendantOf(workspace) then
-							trackedclones[parent] = nil
-						end
-					end)
-				end
-			end
-		end
-	end)
-end
-
--- also check workspace directly for character models
+-- Monitor workspace
 workspace.ChildAdded:Connect(function(child)
 	task.wait(0.2)
-	
-	if child:IsA("Model") and child:FindFirstChild("Humanoid") then
-		if child ~= player.Character and child.Name ~= player.Name then
-			if not trackedClones[child] then
-				trackedClones[child] = true
-				createesp(child)
-				
-				-- clean up when clone is destroyed
-				child.AncestryChanged:Connect(function()
-					if not child:IsDescendantOf(workspace) then
-						trackedClones[child] = nil
-				end
-			end)
-		end
-	end
+	if child:IsA("Model")
+		and child ~= player.Character
+		and child:FindFirstChildOfClass("Humanoid") then
+		createESP(child)
 	end
 end)
 
--- start monitoring clones
-startclonemonitoring()
-print("🟡 Clone Skeleton ESP monitoring active - will track moving clones!")
+--=====================================
+-- GUI
+--=====================================
+local gui = Instance.new("ScreenGui")
+gui.ResetOnSpawn = false
+gui.Parent = playerGui
 
-local screengui = Instance.new("ScreenGui")
-screengui.Name = "EquipCloakGUI"
-screengui.ResetOnSpawn = false
-screengui.Parent = playergui
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0,220,0,90)
+frame.Position = UDim2.new(0.5,-110,0.5,-45)
+frame.BackgroundColor3 = Color3.fromRGB(40,40,40)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Parent = gui
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,10)
 
--- create draggable frame
-local dragFrame = Instance.new("Frame")
-dragFrame.Size = UDim2.new(0, 200, 0, 80)
-dragFrame.Position = UDim2.new(0.5, -100, 0.5, -40)
-dragFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-dragFrame.BorderSizePixel = 0
-dragFrame.Active = true
-dragFrame.Draggable = true
-dragFrame.Parent = screengui
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,26)
+title.BackgroundColor3 = Color3.fromRGB(60,60,60)
+title.Text = "🔮 Invisibility Combo + ESP"
+title.TextColor3 = Color3.fromRGB(220,220,220)
+title.Font = Enum.Font.FredokaOne
+title.TextSize = 12
+title.BorderSizePixel = 0
+title.Parent = frame
 
-local frameCorner = Instance.new("UICorner")
-frameCorner.CornerRadius = UDim.new(0, 10)
-frameCorner.Parent = dragFrame
+-- Discord label
+local discordLabel = Instance.new("TextLabel")
+discordLabel.Size = UDim2.new(1, -20, 0, 18)
+discordLabel.Position = UDim2.new(0, 10, 1, -20)
+discordLabel.BackgroundTransparency = 1
+discordLabel.Text = "discord.gg/A5BjXj6Kkf"
+discordLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+discordLabel.TextStrokeTransparency = 0.6
+discordLabel.Font = Enum.Font.FredokaOne
+discordLabel.TextSize = 11
+discordLabel.TextWrapped = true
+discordLabel.Parent = frame
 
---create title bar 
-local titleBar = Instance.new("TextLabel")
-titleBar.Size = UDim2.new(1, 0, 0, 25)
-titleBar.Position = UDim2.new(0, 0, 0, 0)
-titleBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-titleBar.TextColor3 = Color3.new(200, 200, 200)
-titleBar.Text = "🔮 Invisibility Combo + ESP"
-titleBar.Font = Enum.Font.FredokaOne
-titleBar.TextSize = 12
-titleBar.BorderSizePixel = 0
-titleBar.Parent = dragFrame
-
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 10)
-titleCorner.Parent = titleBar
-
--- create button (inner box - NOT draggable)
 local button = Instance.new("TextButton")
-button.Size = UDim2.new(1, -20, 0, 45)
-button.Position = UDim2.new(0, 10, 0, 30)
-button.BackgroundColor3 = Color3.fromRGB(100, 50, 200)
-button.TextColor3 = Color3.new(255, 255, 255)
-button.text = "Activate Combo"
+button.Size = UDim2.new(1,-20,0,45)
+button.Position = UDim2.new(0,10,0,35)
+button.BackgroundColor3 = Color3.fromRGB(120,60,220)
+button.Text = "Activate Combo"
+button.TextColor3 = Color3.new(1,1,1)
 button.Font = Enum.Font.FredokaOne
-button.textsize = 16
+button.TextSize = 16
 button.BorderSizePixel = 0
-button.Parent = dragFrame
+button.Parent = frame
+Instance.new("UICorner", button).CornerRadius = UDim.new(0,8)
 
-local buttonCorner = Instance.new("UICorner")
-buttonCorner.CornerRadius = UDim.new(0, 8)
-buttonCorner.Parent = button
+--=====================================
+-- MOBILE DRAG
+--=====================================
+local dragging, dragStart, startPos
 
--- prevent multiple clicks at once
-local isequipping = false
+title.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+	end
+end)
 
--- function to equip invisibility cloak
-local function equipinvisibilitycloak()
-	if isequipping then return end
-	isequipping = true
-	
-	local character = player.character
-	if not character then
-		isequipping = false
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseMovement) then
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function()
+	dragging = false
+end)
+
+--=====================================
+-- COMBO LOGIC
+--=====================================
+local busy = false
+
+button.Activated:Connect(function()
+	if busy then return end
+	busy = true
+
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local backpack = player:FindFirstChild("Backpack")
+
+	if not hum or not backpack then
+		busy = false
 		return
 	end
-	
-	local humanoid = character:FindFirstChild("Humanoid")
-	if not humanoid then
-		isequipping = false
-		return
-	end
-	
-	local backpack = player:WaitForChild("BackPack")
-	local cloaktool = nil
-	
-	-- search for the invisibility cloak in backpack
-	for _, item in ipairs(backpack:GetChildren()) do
-		if item:IsA("Tool") and string.lower(item.Name):find("invisibility") then
-			cloaktool = item
-			break
-		end
-	end
-	
-	--if not found try exact name match
-	if not cloaktool then
-		cloaktool = backpack:FindFirstChild("Invisibility Cloak")or
-			backpack:FindFirstChild("invisibility cloak") or
-			backpack:FindFirstChild("InvisibilityCloak")
-	end
-	
-	-- equip the cloak if found
-	if cloaktool then
-		humanoid:unequipTools()
-		wait(0.05)
-		humanoid:equipTool(cloaktool)
-		wait(0.05)
-		
-		--activate the invisibilty cloak
-		cloaktool:activate()
-		
-		button.Text = "Activated!"
-		button.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-		wait(1) -- wait 1 second while invisible
-		
-		-- switch to quantum cloner
-		local quantumcloner = backpack:FindFirstChild("Quantum Cloner") or
-			backpack:FindFirstChild("quantum cloner") or
-			backpack:FindFirstChild("QuantumCloner")
-		
-		-- search if not found by exact name
-		if not quantumcloner then
-			for _, item in ipairs(backpack:GetChildren()) do
-				if item:IsA("Tool") and string.lower(item.Name):find("quantum cloner") then
-					quantumcloner = item
-					break
-				end
+
+	local cloak, cloner
+	for _,tool in ipairs(backpack:GetChildren()) do
+		if tool:IsA("Tool") then
+			local n = tool.Name:lower()
+			if n:find("invisibility") then
+				cloak = tool
+			elseif n:find("quantum") and n:find("cloner") then
+				cloner = tool
 			end
 		end
-		
-		if quantumcloner then
-			humanoid:equipTool(quantumcloner)
-			button.Text = "Switched to Cloner!"
-			
-			-- activate the quantum cloner instantly
-			quantumcloner:Activate()
-			
-			button.Text = "Cloner Activated"
-			wait(0.3)
-		end
-		
-		button.Text = "Activate Combo"
-		button.BackgroundColor3 = Color3.fromRGB(100, 50, 200)
-	else
-		button.Text = "Cloak not found!"
-		button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-		wait(1)
-		button.Text = "Activate Combo"
-		button.BackgroundColor3 = Color3.fromRGB(100, 50, 200)
 	end
-	
-	isequipping = false
-end
 
--- connect button click
-button.MouseButton1Click:Connect(equipinvisibilitycloak)
+	if cloak then
+		hum:UnequipTools()
+		task.wait(0.05)
+		hum:EquipTool(cloak)
+		task.wait(0.05)
+		cloak:Activate()
 
---hover effect
-button.MouseEnter:Connect(function()
-	button.BackgroundColor3 = Color3.fromRGB(80, 40, 180)
+		button.Text = "Cloak Activated"
+		button.BackgroundColor3 = Color3.fromRGB(0,200,0)
+
+		task.wait(1)
+
+		if cloner then
+			hum:EquipTool(cloner)
+			task.wait(0.05)
+			cloner:Activate()
+			button.Text = "Cloner Activated"
+			task.wait(0.4)
+		end
+
+		button.Text = "Activate Combo"
+		button.BackgroundColor3 = Color3.fromRGB(120,60,220)
+	else
+		button.Text = "Cloak Not Found"
+		button.BackgroundColor3 = Color3.fromRGB(200,0,0)
+		task.wait(1)
+		button.Text = "Activate Combo"
+		button.BackgroundColor3 = Color3.fromRGB(120,60,220)
+	end
+
+	busy = false
 end)
 
-button.MouseLeave:Connect(function()
-	button.BackgroundColor3 = Color3.fromRGB(80, 40, 180)
-end)
-
-button.MouseLeave:Connect(function()
-	button.BackgroundColor3 = Color3.fromRGB(100, 50, 200)
-end)
-
-print("Invisibility Combo GUI loaded with skeleton ESP!")
-print("🟡 Clones will be shown with neon yellow skeleton!")
-print("Drag by the title bar!")
+print("📱 Mobile Combo + Skeleton ESP Loaded")
